@@ -9,10 +9,10 @@
         "pitch": -90,
         "yaw": 0,
         "roll": 0,
-        "height_top_view": 1010,
+        "height_top_view": 2730.0,
         "fov": 90
     },
-    "height": 10,
+    "height": 1730.0,
     "interval": 1000,
     "agents": {
         "drone": {
@@ -111,16 +111,94 @@
                     -1
                 ]
             }
+        },
+        "boat": {
+            "name": [
+                "BP_Static_Boat_custom_enemy_2",
+                "BP_Static_Boat_custom_2"
+            ],
+            "cam_id": [
+                3,
+                1
+            ],
+            "class_name": [
+                "BP_boat_C",
+                "BP_boat_C"
+            ],
+            "internal_nav": true,
+            "scale": [
+                1,
+                1,
+                1
+            ],
+            "relative_location": [
+                0,
+                0,
+                0
+            ],
+            "relative_rotation": [
+                0,
+                0,
+                0
+            ],
+            "move_action": [
+                [
+                    1,
+                    0
+                ],
+                [
+                    -0.3,
+                    0
+                ],
+                [
+                    0.5,
+                    1
+                ],
+                [
+                    0.5,
+                    -1
+                ],
+                [
+                    0,
+                    0
+                ]
+            ],
+            "move_action_continuous": {
+                "high": [
+                    1,
+                    1
+                ],
+                "low": [
+                    0,
+                    -1
+                ]
+            }
         }
     },
-    "safe_start": [],
+    "safe_start": [
+        [
+            -7337.0,
+            4427.0,
+            1730.0
+        ],
+        [
+            2801.007,
+            4892.0,
+            -90.896
+        ],
+        [
+            -6215.999,
+            6448.0,
+            -175.397
+        ]
+    ],
     "reset_area": [
-        10,
-        10,
-        10,
-        10,
-        10,
-        10
+        -7337.0,
+        2801.007,
+        4427.0,
+        6448.0,
+        -175.397,
+        1730.0
     ],
     "random_init": false,
     "env": {

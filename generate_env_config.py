@@ -16,6 +16,7 @@ class_name = {
     "drone": "BP_drone01_C",
     "car": "BP_BaseCar_C",
     "motorbike": "MotorBikes_C",
+    "boat": "BP_boat_C"
 }
 
 player_config = {
@@ -109,6 +110,26 @@ car_config = {
         "low":  [0, -1]
     }
 }
+boat_config = {
+    "name": [],
+    "cam_id": [],
+    "class_name": [],
+    "internal_nav": True,
+    "scale": [1, 1, 1],
+    "relative_location": [0, 0,  0],
+    "relative_rotation": [0, 0, 0],
+    "move_action": [
+        [1,  0],
+        [-0.3,  0],
+        [0.5,  1],
+        [0.5, -1],
+        [0,  0]
+    ],
+    "move_action_continuous": {
+        "high": [1,  1],
+        "low":  [0, -1]
+    }
+}
 
 motorbike_config = {
     "name": [],
@@ -136,7 +157,8 @@ agents = {
     "animal": animal_config,
     "drone": drone_config,
     "car": car_config,
-    "motorbike": motorbike_config
+    "motorbike": motorbike_config,
+    "boat": boat_config,
 }
 
 env_config = {
@@ -212,7 +234,8 @@ if __name__ == '__main__':
             "animal": copy.deepcopy(animal_config),
             "drone": copy.deepcopy(drone_config),
             "car": copy.deepcopy(car_config),
-            "motorbike": copy.deepcopy(motorbike_config)
+            "motorbike": copy.deepcopy(motorbike_config),
+            "boat": copy.deepcopy(boat_config)
         }
         env_config = {
             "env_name": None,
@@ -329,11 +352,16 @@ if __name__ == '__main__':
                 agents['animal']['name'].append(obj)
                 agents['animal']['class_name'].append(class_name['animal'])
                 agents['animal']['cam_id'].append(match_cam_id(cam_locs, obj))
+            elif re.match(re.compile(r'BP_Static_Boat', re.I), obj) is not None:
+                agents['boat']['name'].append(obj)
+                agents['boat']['class_name'].append(class_name['boat'])
+                agents['boat']['cam_id'].append(match_cam_id(cam_locs, obj))
                 start_pos_list.append(unrealcv.get_obj_location(obj))
             elif re.match(re.compile(r'bp_drone', re.I), obj) is not None:
                 agents['drone']['name'].append(obj)
                 agents['drone']['cam_id'].append(match_cam_id(cam_locs, obj))
                 agents['drone']['class_name'].append(class_name['drone'])
+                start_pos_list.append(unrealcv.get_obj_location(obj))
                 # env_config['safe_start'].append(unrealcv.get_obj_location(obj))
             elif re.match(re.compile(r'bp_basecar', re.I), obj) is not None:
                 agents['car']['name'].append(obj)
@@ -349,6 +377,7 @@ if __name__ == '__main__':
                 env_config['env']['interactive_door'].append(obj)
 
         agents = {k: v for k, v in agents.items() if len(v['name']) > 0}  # remove the agent category not in the scene
+        print(agents)
         env_config['agents'] = agents
 
         env_config['safe_start'] = start_pos_list

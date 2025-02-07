@@ -45,7 +45,7 @@ if __name__ == '__main__':
     args = parser.parse_args()
     env = gym.make(args.env_id)
     env = configUE.ConfigUEWrapper(env, offscreen=False,resolution=(240,240))
-    env.unwrapped.agents_category=['player'] #choose the agent type in the scene
+    env.unwrapped.agents_category=['boat', 'drone'] #choose the agent type in the scene
 
     if int(args.time_dilation) > 0:  # -1 means no time_dilation
         env = time_dilation.TimeDilationWrapper(env, int(args.time_dilation))
@@ -54,7 +54,6 @@ if __name__ == '__main__':
     if args.monitor:
         env = monitor.DisplayWrapper(env)
 
-    env = augmentation.RandomPopulationWrapper(env, 2, 10, random_target=False)
     if args.nav_agent:
         env = agents.NavAgents(env, mask_agent=False)
     episode_count = 100
