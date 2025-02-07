@@ -1,0 +1,9 @@
+gym==0.10.9
+matplotlib
+numpy
+unrealcv
+wget
+opencv-python
+simple_pid
+pynput
+docker
