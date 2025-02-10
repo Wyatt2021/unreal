@@ -6,6 +6,8 @@ import cv2
 import time
 import os
 import numpy as np
+os.environ['UnrealEnv'] = r'C:\\Users\\86188\Desktop\\tasks\\unreal\\unreal\\gym_unrealcv\\envs\\UnrealEnv'
+
 class RandomAgent(object):
     """The world's simplest agent!"""
     def __init__(self, action_space):
@@ -17,14 +19,14 @@ class RandomAgent(object):
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description=None)
-    parser.add_argument("-e", "--env_id", nargs='?', default='UnrealTrackingMPRoom-DiscreteColorGoal-v2',
+    parser.add_argument("-e", "--env_id", nargs='?', default='UnrealTrack-Ocean_Map-ContinuousColor-v0',
                         help='Select the environment to run')
     parser.add_argument("-r", "--render", default=False, metavar='G', help='show env using cv2')
     args = parser.parse_args()
     env = gym.make(args.env_id)
     env = env.unwrapped
-    agent_0 = RandomAgent(env.action_space[0])
-    agent_1 = RandomAgent(env.action_space[1])
+    agent_0 = RandomAgent(env.action_space[1])
+    agent_1 = RandomAgent(env.action_space[2])
 
     episode_count = 100
     rewards = 0
@@ -32,21 +34,22 @@ if __name__ == '__main__':
 
     for i in range(episode_count):
         env.seed(i)
-        env.direction = 2*np.pi/8.0 * env.count_eps
+        #env.direction = 2*np.pi/8.0 * env.count_eps
+        env.direction = 0
         obs = env.reset()
         os.mkdir("%03d" % env.count_eps)
-        cv2.imwrite(os.path.join("%03d" % env.count_eps, "%03d" % env.count_steps+'.png'), obs[1])
+        cv2.imwrite(os.path.join("%03d" % env.count_eps, "%03d" % env.count_steps+'.png'), obs[0])
         count_step = 0
         t0 = time.time()
         while True:
-            action_0 = agent_0.act(obs, rewards, done)
-            action_1 = agent_0.act(obs, rewards, done)
-            action_0 = 0
-            action_1 = 6
-            # action_1 = agent_1.act(obs, rewards, done)
+            # action_0 = agent_0.act(obs, rewards, done)
+            # action_1 = agent_1.act(obs, rewards, done)    
+            # action_1 = agent_0.act(obs, rewards, done)
+            action_0 = [0,500]
+            action_1 = [0,0]
             obs, rewards, done, info = env.step([action_0, action_1])
             # recoder
-            cv2.imwrite(os.path.join("%03d" % env.count_eps, "%03d" % env.count_steps + '.png'), obs[1])
+            cv2.imwrite(os.path.join("%03d" % env.count_eps, "%03d" % env.count_steps + '.png'), obs[0])
             if info['Done']:
                 import json
                 with open(os.path.join("%03d" % env.count_eps, 'info.json'), 'w') as f:

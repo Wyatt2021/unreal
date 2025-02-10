@@ -29,7 +29,8 @@ class Track(UnrealCv_base):
                                     reset_type=reset_type)
         self.count_lost = 0
         self.max_lost_steps = 20
-        self.agents_category = ['boat', 'drone']
+        self.agents_category = ['boat']
+        # self.agents_category = ['player']
         self.reward_type = 'dense'  # 'dense', 'sparse'
         self.reward_params = {
             "min_distance": 100,
@@ -63,7 +64,7 @@ class Track(UnrealCv_base):
         observations = super(Track, self).reset()
         target_pos = self.unrealcv.get_obj_location(self.player_list[self.target_id])
         print(target_pos)
-        self.unrealcv.nav_to_goal(self.player_list[self.target_id], target_pos)
+        # self.unrealcv.nav_to_goal(self.player_list[self.target_id], target_pos)
         time.sleep(1)
         super(Track, self).random_app()
         object_list = self.unrealcv.get_objects()
@@ -81,12 +82,12 @@ class Track(UnrealCv_base):
         ##############
         time.sleep(1)
         target_pos = self.unrealcv.get_obj_location(self.player_list[self.target_id])
-        # initialize the tracker
-        cam_pos_exp, yaw_exp= self.get_tracker_init_point(target_pos, self.reward_params["exp_distance"])
-        # set tracker location
-        tracker_name = self.player_list[self.tracker_id]
-        self.unrealcv.set_obj_location(tracker_name, cam_pos_exp)
-        self.unrealcv.set_obj_rotation(tracker_name, [0, yaw_exp, 0])
+        # # initialize the tracker
+        # cam_pos_exp, yaw_exp= self.get_tracker_init_point(target_pos, self.reward_params["exp_distance"])
+        # # set tracker location
+        # tracker_name = self.player_list[self.tracker_id]
+        # self.unrealcv.set_obj_location(tracker_name, cam_pos_exp)
+        # self.unrealcv.set_obj_rotation(tracker_name, [0, yaw_exp, 0])
         # reset if cannot see the target at initial frame
         # try:
         #     while self.unwrapped.unrealcv.check_visibility(self.cam_list[self.tracker_id],self.player_list[self.target_id]) == 0:
