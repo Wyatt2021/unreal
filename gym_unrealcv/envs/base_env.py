@@ -138,12 +138,14 @@ class UnrealCv_base(gym.Env):
             Color=None,
             Depth=None,
             Relative_Pose=[],
-            Success=False
+            Success=False,
+            angle = None
         )
         actions2move, actions2turn, actions2animate = self.action_mapping(actions, self.player_list)
         move_cmds = [self.unrealcv.set_move_bp(obj, actions2move[i], return_cmd=True) for i, obj in enumerate(self.player_list) if actions2move[i] is not None]
         head_cmds = [self.unrealcv.set_cam(obj, self.agents[obj]['relative_location'], actions2turn[i], return_cmd=True) for i, obj in enumerate(self.player_list) if actions2turn[i] is not None]
         anim_cmds = [self.unrealcv.set_animation(obj, actions2animate[i], return_cmd=True) for i, obj in enumerate(self.player_list) if actions2animate[i] is not None]
+        print(move_cmds)
         self.unrealcv.batch_cmd(move_cmds+head_cmds+anim_cmds, None)
         self.count_steps += 1
 
@@ -154,12 +156,13 @@ class UnrealCv_base(gym.Env):
         self.img_show = self.prepare_img2show(self.protagonist_id, observations)
 
         pose_obs, relative_pose = self.get_pose_states(obj_poses)
-
+        angle = [self.unrealcv.get_obj_rotation(self.player_list[i])[1] for i in range(len(self.player_list))]
         # prepare the info
         info['Pose'] = obj_poses
         info['Relative_Pose'] = relative_pose
         info['Pose_Obs'] = pose_obs
         info['Reward'] = np.zeros(len(self.player_list))
+        info['angle'] = angle
 
         return observations, info['Reward'], info['Done'], info
 
