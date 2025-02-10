@@ -672,3 +672,6 @@ class Character_API(UnrealCv_API):
                       np.sin(angle/180*np.pi), np.cos(angle/180*np.pi),
                       distance]
         return obs_vector, distance, angle
+    def set_attack(self, player, bullet_num=1):
+        cmd = f'vbp {player} set_attack 1 {bullet_num}'
+        self.client.request(cmd, -1)

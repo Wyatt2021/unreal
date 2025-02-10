@@ -16,7 +16,8 @@ class_name = {
     "drone": "BP_drone01_C",
     "car": "BP_BaseCar_C",
     "motorbike": "MotorBikes_C",
-    "boat": "BP_boat_C"
+    "boat": "BP_Static_Boat_custom_C",
+    "boat_enemy": "BP_Static_Boat_custom_enemy_C"
 }
 
 player_config = {
@@ -119,18 +120,37 @@ boat_config = {
     "relative_location": [0, 0,  0],
     "relative_rotation": [0, 0, 0],
     "move_action": [
-        [1,  0],
-        [-0.3,  0],
-        [0.5,  1],
-        [0.5, -1],
+        [0, 500],
+        [0,  -500],
+        [20,  300],
+        [-20, 300],
         [0,  0]
     ],
     "move_action_continuous": {
-        "high": [1,  1],
-        "low":  [0, -1]
+        "high": [30,  600],
+        "low":  [-30, -600]
     }
 }
-
+boat_enemy_config = {
+    "name": [],
+    "cam_id": [],
+    "class_name": [],
+    "internal_nav": True,
+    "scale": [1, 1, 1],
+    "relative_location": [0, 0,  0],
+    "relative_rotation": [0, 0, 0],
+    "move_action": [
+        [0, 500],
+        [0,  -500],
+        [20,  300],
+        [-20, 300],
+        [0,  0]
+    ],
+    "move_action_continuous": {
+        "high": [30,  600],
+        "low":  [-30, -600]
+    }
+}
 motorbike_config = {
     "name": [],
     "cam_id": [],
@@ -159,6 +179,7 @@ agents = {
     "car": car_config,
     "motorbike": motorbike_config,
     "boat": boat_config,
+    "boat_enemy": boat_enemy_config,
 }
 
 env_config = {
@@ -176,7 +197,7 @@ env_config = {
         "fov": 90
     },
     "height": 500,
-    "interval": 1000,
+    "interval": 1000,    
     "agents": agents,
     "safe_start": [],
     "reset_area": [0, 0, 0, 0, 0, 0],
@@ -235,7 +256,8 @@ if __name__ == '__main__':
             "drone": copy.deepcopy(drone_config),
             "car": copy.deepcopy(car_config),
             "motorbike": copy.deepcopy(motorbike_config),
-            "boat": copy.deepcopy(boat_config)
+            "boat": copy.deepcopy(boat_config),
+            "boat_enemy": copy.deepcopy(boat_enemy_config)
         }
         env_config = {
             "env_name": None,
@@ -352,7 +374,12 @@ if __name__ == '__main__':
                 agents['animal']['name'].append(obj)
                 agents['animal']['class_name'].append(class_name['animal'])
                 agents['animal']['cam_id'].append(match_cam_id(cam_locs, obj))
-            elif re.match(re.compile(r'BP_Static_Boat', re.I), obj) is not None:
+            elif re.match(re.compile(r'BP_Static_Boat_custom_enemy', re.I), obj) is not None: 
+                agents['boat_enemy']['name'].append(obj)
+                agents['boat_enemy']['class_name'].append(class_name['boat_enemy'])
+                agents['boat_enemy']['cam_id'].append(match_cam_id(cam_locs, obj))
+                start_pos_list.append(unrealcv.get_obj_location(obj))
+            elif re.match(re.compile(r'BP_Static_Boat_custom', re.I), obj) is not None:
                 agents['boat']['name'].append(obj)
                 agents['boat']['class_name'].append(class_name['boat'])
                 agents['boat']['cam_id'].append(match_cam_id(cam_locs, obj))
