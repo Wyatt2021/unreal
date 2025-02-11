@@ -4,11 +4,13 @@
 import argparse
 import gym_unrealcv
 import gym
+import os
 from gym import wrappers
 import cv2
 import time
 import numpy as np
 from gym_unrealcv.envs.wrappers import time_dilation, early_done, monitor, agents, augmentation, configUE
+from gym_unrealcv.envs.utils import misc
 
 class RandomAgent(object):
     """The world's simplest agent!"""
@@ -30,6 +32,29 @@ class RandomAgent(object):
         self.action = self.action_space.sample()
         self.count_steps = 0
 
+class DronePoseTracker(object):
+    def __init__(self, expected_distance = 450, expected_angle = 0):
+
+        self.velocity_high = 1
+        self.velocity_low = -1
+        self.angle_high = 1
+        self.angle_low = -1
+        self.expected_distance = expected_distance
+        self.expected_angle = expected_angle
+        from simple_pid import PID
+        self.angle_pid = PID(1, 0.01, 0, setpoint=1)
+        self.velocity_pid = PID(3, 0.1, 0.05, setpoint=1)
+
+    def act(self, pose, target_pose):
+        delt_yaw = misc.get_direction(pose, target_pose) # get the angle between current pose and goal in x-y plane
+        # angle = np.clip(self.angle_pid(-delt_yaw), self.angle_low, self.angle_high)
+        angle = np.clip(self.angle_pid(self.expected_angle-delt_yaw), self.angle_low, self.angle_high)
+
+        delt_distance = (np.linalg.norm(np.array(pose[:2]) - np.array(target_pose[:2])) - self.expected_distance)
+        velocity = np.clip(self.velocity_pid(-delt_distance), self.velocity_low, self.velocity_high)
+
+        return [velocity,0,0,angle]
+
 def init_pose(env):
     # set enemy boat to far away
     actions=[[0,0,0,0],[0,0],[50,0]]
@@ -40,8 +65,9 @@ def init_pose(env):
     time.sleep(10)
     # set drone to the start angle
     #actions=[[0,0,0,180],[0,0],[0,0]]
-    obs, rewards, done, info = env.step(actions)
-    time.sleep(5)
+    
+    # obs, rewards, done, info = env.step(actions)
+    # time.sleep(5)
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description=None)
@@ -76,7 +102,7 @@ if __name__ == '__main__':
     env.seed(int(args.seed))
     for eps in range(1, episode_count):
         obs = env.reset()
-        drone_start_loc=[5080, 15145, 2321, -0.19, 34.910, 0]
+        drone_start_loc=[19705, 30193, 2709, -17.13, 31.94, 0]
         # boat_start_loc=[-6417.9, 6440.8, 125.3, -6.0, 2.3, 0.0]
         # boat_enemy_start_loc=[20709.7, 14469.0, 80.115, -3.6, 77.9, 0.0]
         env.unwrapped.unrealcv.set_obj_location(env.unwrapped.player_list[0],drone_start_loc[:3])
@@ -85,8 +111,8 @@ if __name__ == '__main__':
         # env.unwrapped.unrealcv.set_obj_rotation(env.unwrapped.player_list[1],boat_start_loc[3:])
         # env.unwrapped.unrealcv.set_obj_location(env.unwrapped.player_list[2],boat_enemy_start_loc[:3])
         # env.unwrapped.unrealcv.set_obj_rotation(env.unwrapped.player_list[2],boat_enemy_start_loc[3:])
-
         init_pose(env)
+        drone_tracker = DronePoseTracker()    
         #agents_num = len(env.action_space)
         #agents = [RandomAgent(env.action_space[i]) for i in range(agents_num)]  # reset agents
         count_step = 0
@@ -105,11 +131,17 @@ if __name__ == '__main__':
             # -boat:[angle,speed]
             #example:[[1,0,0,0], [0,500], [0,0]]
             #env.unwrapped.unrealcv.set_attack(env.unwrapped.player_list[1],20)
-            actions=[[0,0,0,0],[0,0],[0,0]]
+            enemy_boat_pose = env.unwrapped.unrealcv.get_obj_pose(env.unwrapped.player_list[2])
+            drone_pose = env.unwrapped.unrealcv.get_obj_pose(env.unwrapped.player_list[0])
+            drone_action = drone_tracker.act(drone_pose,enemy_boat_pose)
+            actions=[drone_action,[0,0],[0,500]]
             obs, rewards, done, info = env.step(actions)
             #C_rewards += rewards
             count_step += 1
             cv2.imshow('drone obs',obs[0])
+            #if count_step%5 == 0:
+                #save image
+            #    cv2.imwrite('C:\\Users\\Administrator\\Desktop\\Unrealzoo\\imgs\\drone_obs'+str(count_step)+'.png',obs[0])
             cv2.imshow('boat obs',obs[1])
             cv2.imshow('boat_enemy obs',obs[2])
             cv2.waitKey(1)
