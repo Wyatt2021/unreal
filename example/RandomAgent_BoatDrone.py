@@ -62,9 +62,9 @@ class DronePoseTracker(object):
 
 
 class BoatPoseTracker(object):
-    def __init__(self, expected_distance=7000, expected_angle=0):
-        self.velocity_high = 900  # 根据船只的最大速度调整
-        self.velocity_low = -900  # 根据船只的最小速度调整
+    def __init__(self, expected_distance=10000, expected_angle=0):
+        self.velocity_high = 600  # 根据船只的最大速度调整
+        self.velocity_low = -600  # 根据船只的最小速度调整
         self.angle_high = 60  # 根据船只的最大转向角度调整
         self.angle_low = -60  # 根据船只的最小转向角度调整
         self.expected_distance = expected_distance
@@ -84,19 +84,19 @@ class BoatPoseTracker(object):
         delt_distance = (np.linalg.norm(np.array(pose[:2]) - np.array(target_pose[:2])) - self.expected_distance)
         velocity = np.clip(self.velocity_pid(-delt_distance), self.velocity_low, self.velocity_high)
         print(np.linalg.norm(np.array(pose[:2]) - np.array(target_pose[:2])))
-        if np.linalg.norm(np.array(pose[:2]) - np.array(target_pose[:2])) <= 7000:
-            env.unwrapped.unrealcv.set_attack(env.unwrapped.player_list[1],5)
+        if np.linalg.norm(np.array(pose[:2]) - np.array(target_pose[:2])) <= 10000:
+            env.unwrapped.unrealcv.set_attack(env.unwrapped.player_list[1], 20)
         # 返回控制动作
         return [angle, velocity]  
 
 def init_pose(env):
     # set enemy boat to far away
-    # actions=[[0,0,0,0],[0,0],[50,0]]
-    # obs, rewards, done, info = env.step(actions)
-    # time.sleep(10)
-    actions=[[0,0,0,0],[0,0],[0,30000]]
+    actions=[[0,0,0,0],[0,0],[50,0]]
     obs, rewards, done, info = env.step(actions)
-    time.sleep(1)
+    time.sleep(5)
+    actions=[[0,0,0,0],[0,0],[50,22000]]
+    obs, rewards, done, info = env.step(actions)
+    time.sleep(10)
     # set drone to the start angle
     #actions=[[0,0,0,180],[0,0],[0,0]]
     
@@ -171,18 +171,27 @@ if __name__ == '__main__':
             drone_pose = env.unwrapped.unrealcv.get_obj_pose(env.unwrapped.player_list[0])
             boat_pose = env.unwrapped.unrealcv.get_obj_pose(env.unwrapped.player_list[1])
             drone_action = drone_tracker.act(drone_pose,enemy_boat_pose)
-            boat_action = boat_tracker.act(boat_pose,enemy_boat_pose)
+
+            distance_drone2enemy = np.linalg.norm(np.array(drone_pose[:2]) - np.array(enemy_boat_pose[:2]))
+            control_flag = False
+            if distance_drone2enemy < 5000 or control_flag:
+                boat_action = boat_tracker.act(boat_pose,enemy_boat_pose)
+                control_flag = True
+            else:
+                boat_action = [0,0]
+            
             actions=[drone_action,boat_action,[0,300]]
             obs, rewards, done, info = env.step(actions)
             #C_rewards += rewards
             count_step += 1
-            # cv2.imshow('drone obs',obs[0])
-            # #if count_step%5 == 0:
-            #     #save image
-            #cv2.imwrite('C:\\Users\\86188\\Desktop\\tasks\\unreal\\images_ego\\'+str(count_step)+'.png',obs[1])
-            # cv2.imshow('boat obs',obs[1])
-            # cv2.imshow('boat_enemy obs',obs[2])
-            # cv2.waitKey(1)
+            cv2.imshow('drone obs',obs[0])
+            if count_step%2 == 0:
+                #save image
+                cv2.imwrite('C:\\Users\\Administrator\\Desktop\\Unrealzoo\\imgs\\drone\\'+str(count_step)+'.png',obs[0])
+                cv2.imwrite('C:\\Users\\Administrator\\Desktop\\Unrealzoo\\imgs\\boat\\'+str(count_step)+'.png',obs[1])
+            cv2.imshow('boat obs',obs[1])
+            cv2.imshow('boat_enemy obs',obs[2])
+            cv2.waitKey(1)
 
     # Close the env and write monitor result info to disk
     print('Finished')
