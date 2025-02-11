@@ -675,3 +675,7 @@ class Character_API(UnrealCv_API):
     def set_attack(self, player, bullet_num=1):
         cmd = f'vbp {player} set_attack 1 {bullet_num}'
         self.client.request(cmd, -1)
+
+    def set_app(self, player, num):
+        cmd = f'vbp {player} set_app {num}'
+        self.client.request(cmd, -1)

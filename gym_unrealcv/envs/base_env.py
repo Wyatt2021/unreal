@@ -146,7 +146,7 @@ class UnrealCv_base(gym.Env):
         anim_cmds = [self.unrealcv.set_animation(obj, actions2animate[i], return_cmd=True) for i, obj in enumerate(self.player_list) if actions2animate[i] is not None]
         self.unrealcv.batch_cmd(move_cmds+head_cmds+anim_cmds, None)
         self.count_steps += 1
-
+        print(move_cmds)
         # get states
         obj_poses, cam_poses, imgs, masks, depths = self.unrealcv.get_pose_img_batch(self.player_list, self.cam_list, self.cam_flag)
         self.obj_poses = obj_poses
