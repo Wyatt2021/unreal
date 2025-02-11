@@ -33,17 +33,17 @@ class RandomAgent(object):
         self.count_steps = 0
 
 class DronePoseTracker(object):
-    def __init__(self, expected_distance = 450, expected_angle = 0):
+    def __init__(self, expected_distance = 5000, expected_angle = 0):
 
-        self.velocity_high = 1
-        self.velocity_low = -1
+        self.velocity_high = 0.75
+        self.velocity_low = -0.75
         self.angle_high = 1
         self.angle_low = -1
         self.expected_distance = expected_distance
         self.expected_angle = expected_angle
         from simple_pid import PID
         self.angle_pid = PID(1, 0.01, 0, setpoint=1)
-        self.velocity_pid = PID(3, 0.1, 0.05, setpoint=1)
+        self.velocity_pid = PID(3, 0.000, 0.2, setpoint=1)
 
     def act(self, pose, target_pose):
         delt_yaw = misc.get_direction(pose, target_pose) # get the angle between current pose and goal in x-y plane
@@ -51,8 +51,10 @@ class DronePoseTracker(object):
         angle = np.clip(self.angle_pid(self.expected_angle-delt_yaw), self.angle_low, self.angle_high)
 
         delt_distance = (np.linalg.norm(np.array(pose[:2]) - np.array(target_pose[:2])) - self.expected_distance)
-        velocity = np.clip(self.velocity_pid(-delt_distance), self.velocity_low, self.velocity_high)
+        
+        velocity = np.clip(self.velocity_pid(-delt_distance/1000), self.velocity_low, self.velocity_high)
 
+        #print('delt_distance:',delt_distance,'velocity:',velocity, 'velocity_pid:',self.velocity_pid(-delt_distance))
         return [velocity,0,0,angle]
 
 def init_pose(env):
@@ -102,7 +104,7 @@ if __name__ == '__main__':
     env.seed(int(args.seed))
     for eps in range(1, episode_count):
         obs = env.reset()
-        drone_start_loc=[19705, 30193, 2709, -17.13, 31.94, 0]
+        drone_start_loc=[1368, 6686, 2359, -10.269, 46.61, 0]
         # boat_start_loc=[-6417.9, 6440.8, 125.3, -6.0, 2.3, 0.0]
         # boat_enemy_start_loc=[20709.7, 14469.0, 80.115, -3.6, 77.9, 0.0]
         env.unwrapped.unrealcv.set_obj_location(env.unwrapped.player_list[0],drone_start_loc[:3])
@@ -134,7 +136,7 @@ if __name__ == '__main__':
             enemy_boat_pose = env.unwrapped.unrealcv.get_obj_pose(env.unwrapped.player_list[2])
             drone_pose = env.unwrapped.unrealcv.get_obj_pose(env.unwrapped.player_list[0])
             drone_action = drone_tracker.act(drone_pose,enemy_boat_pose)
-            actions=[drone_action,[0,0],[0,500]]
+            actions=[drone_action,[0,0],[0,300]]
             obs, rewards, done, info = env.step(actions)
             #C_rewards += rewards
             count_step += 1
