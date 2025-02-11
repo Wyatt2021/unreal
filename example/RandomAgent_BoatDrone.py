@@ -11,6 +11,8 @@ import time
 import numpy as np
 from gym_unrealcv.envs.wrappers import time_dilation, early_done, monitor, agents, augmentation, configUE
 from gym_unrealcv.envs.utils import misc
+import os 
+os.environ['UnrealEnv'] = r'C:\\Users\\86188\Desktop\\tasks\\unreal\\unreal_old\\gym_unrealcv\\envs\\UnrealEnv'
 
 class RandomAgent(object):
     """The world's simplest agent!"""
@@ -55,14 +57,44 @@ class DronePoseTracker(object):
 
         return [velocity,0,0,angle]
 
+
+
+class BoatPoseTracker(object):
+    def __init__(self, expected_distance=7000, expected_angle=0):
+        self.velocity_high = 900  # 根据船只的最大速度调整
+        self.velocity_low = -900  # 根据船只的最小速度调整
+        self.angle_high = 60  # 根据船只的最大转向角度调整
+        self.angle_low = -60  # 根据船只的最小转向角度调整
+        self.expected_distance = expected_distance
+        self.expected_angle = expected_angle
+
+        # 调整 PID 控制器参数以适应船只的动态特性
+        from simple_pid import PID
+        self.angle_pid = PID(0.5, 0.01, 0.01, setpoint=1)  # 调整角度 PID 参数
+        self.velocity_pid = PID(1.0, 0.05, 0.02, setpoint=1)  # 调整速度 PID 参数
+
+    def act(self, pose, target_pose):
+        # 计算当前姿态与目标姿态之间的角度差
+        delt_yaw = misc.get_direction(pose, target_pose)  # 获取当前姿态与目标姿态之间的角度差
+        angle = np.clip(self.angle_pid(self.expected_angle - delt_yaw), self.angle_low, self.angle_high)
+
+        # 计算当前姿态与目标姿态之间的距离差
+        delt_distance = (np.linalg.norm(np.array(pose[:2]) - np.array(target_pose[:2])) - self.expected_distance)
+        velocity = np.clip(self.velocity_pid(-delt_distance), self.velocity_low, self.velocity_high)
+        print(np.linalg.norm(np.array(pose[:2]) - np.array(target_pose[:2])))
+        if np.linalg.norm(np.array(pose[:2]) - np.array(target_pose[:2])) <= 7000:
+            env.unwrapped.unrealcv.set_attack(env.unwrapped.player_list[1],5)
+        # 返回控制动作
+        return [angle, velocity]  
+
 def init_pose(env):
     # set enemy boat to far away
-    actions=[[0,0,0,0],[0,0],[50,0]]
+    # actions=[[0,0,0,0],[0,0],[50,0]]
+    # obs, rewards, done, info = env.step(actions)
+    # time.sleep(10)
+    actions=[[0,0,0,0],[0,0],[0,30000]]
     obs, rewards, done, info = env.step(actions)
-    time.sleep(5)
-    actions=[[0,0,0,0],[0,0],[50,30000]]
-    obs, rewards, done, info = env.step(actions)
-    time.sleep(10)
+    time.sleep(1)
     # set drone to the start angle
     #actions=[[0,0,0,180],[0,0],[0,0]]
     
@@ -111,8 +143,10 @@ if __name__ == '__main__':
         # env.unwrapped.unrealcv.set_obj_rotation(env.unwrapped.player_list[1],boat_start_loc[3:])
         # env.unwrapped.unrealcv.set_obj_location(env.unwrapped.player_list[2],boat_enemy_start_loc[:3])
         # env.unwrapped.unrealcv.set_obj_rotation(env.unwrapped.player_list[2],boat_enemy_start_loc[3:])
+        env.unwrapped.unrealcv.set_app(env.unwrapped.player_list[2],2)
         init_pose(env)
-        drone_tracker = DronePoseTracker()    
+        drone_tracker = DronePoseTracker()   
+        boat_tracker = BoatPoseTracker() 
         #agents_num = len(env.action_space)
         #agents = [RandomAgent(env.action_space[i]) for i in range(agents_num)]  # reset agents
         count_step = 0
@@ -130,21 +164,23 @@ if __name__ == '__main__':
             # -drone:[x,y,z,yaw]
             # -boat:[angle,speed]
             #example:[[1,0,0,0], [0,500], [0,0]]
-            #env.unwrapped.unrealcv.set_attack(env.unwrapped.player_list[1],20)
+            #
             enemy_boat_pose = env.unwrapped.unrealcv.get_obj_pose(env.unwrapped.player_list[2])
             drone_pose = env.unwrapped.unrealcv.get_obj_pose(env.unwrapped.player_list[0])
+            boat_pose = env.unwrapped.unrealcv.get_obj_pose(env.unwrapped.player_list[1])
             drone_action = drone_tracker.act(drone_pose,enemy_boat_pose)
-            actions=[drone_action,[0,0],[0,500]]
+            boat_action = boat_tracker.act(boat_pose,enemy_boat_pose)
+            actions=[drone_action,boat_action,[50,300]]
             obs, rewards, done, info = env.step(actions)
             #C_rewards += rewards
             count_step += 1
-            cv2.imshow('drone obs',obs[0])
-            #if count_step%5 == 0:
-                #save image
-            #    cv2.imwrite('C:\\Users\\Administrator\\Desktop\\Unrealzoo\\imgs\\drone_obs'+str(count_step)+'.png',obs[0])
-            cv2.imshow('boat obs',obs[1])
-            cv2.imshow('boat_enemy obs',obs[2])
-            cv2.waitKey(1)
+            # cv2.imshow('drone obs',obs[0])
+            # #if count_step%5 == 0:
+            #     #save image
+            cv2.imwrite('C:\\Users\\86188\\Desktop\\tasks\\unreal\\images_ego\\'+str(count_step)+'.png',obs[1])
+            # cv2.imshow('boat obs',obs[1])
+            # cv2.imshow('boat_enemy obs',obs[2])
+            # cv2.waitKey(1)
 
     # Close the env and write monitor result info to disk
     print('Finished')
