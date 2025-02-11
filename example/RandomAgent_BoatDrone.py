@@ -30,6 +30,18 @@ class RandomAgent(object):
         self.action = self.action_space.sample()
         self.count_steps = 0
 
+def init_pose(env):
+    # set enemy boat to far away
+    actions=[[0,0,0,0],[0,0],[50,0]]
+    obs, rewards, done, info = env.step(actions)
+    time.sleep(5)
+    actions=[[0,0,0,0],[0,0],[50,30000]]
+    obs, rewards, done, info = env.step(actions)
+    time.sleep(10)
+    # set drone to the start angle
+    #actions=[[0,0,0,180],[0,0],[0,0]]
+    obs, rewards, done, info = env.step(actions)
+    time.sleep(5)
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description=None)
@@ -64,23 +76,25 @@ if __name__ == '__main__':
     env.seed(int(args.seed))
     for eps in range(1, episode_count):
         obs = env.reset()
-
-        # drone_start_loc=[9054.2, 7731.4, 5511.3, -21, 32.4, 0.0]
+        drone_start_loc=[5080, 15145, 2321, -0.19, 34.910, 0]
         # boat_start_loc=[-6417.9, 6440.8, 125.3, -6.0, 2.3, 0.0]
         # boat_enemy_start_loc=[20709.7, 14469.0, 80.115, -3.6, 77.9, 0.0]
-        # env.unwrapped.unrealcv.set_obj_location(env.unwrapped.player_list[0],drone_start_loc[:3])
-        # env.unwrapped.unrealcv.set_obj_rotation(env.unwrapped.player_list[0],drone_start_loc[3:])
+        env.unwrapped.unrealcv.set_obj_location(env.unwrapped.player_list[0],drone_start_loc[:3])
+        #env.unwrapped.unrealcv.set_obj_rotation(env.unwrapped.player_list[0],drone_start_loc[3:])
         # env.unwrapped.unrealcv.set_obj_location(env.unwrapped.player_list[1],boat_start_loc[:3])
         # env.unwrapped.unrealcv.set_obj_rotation(env.unwrapped.player_list[1],boat_start_loc[3:])
         # env.unwrapped.unrealcv.set_obj_location(env.unwrapped.player_list[2],boat_enemy_start_loc[:3])
         # env.unwrapped.unrealcv.set_obj_rotation(env.unwrapped.player_list[2],boat_enemy_start_loc[3:])
 
-        agents_num = len(env.action_space)
-        agents = [RandomAgent(env.action_space[i]) for i in range(agents_num)]  # reset agents
+        init_pose(env)
+        #agents_num = len(env.action_space)
+        #agents = [RandomAgent(env.action_space[i]) for i in range(agents_num)]  # reset agents
         count_step = 0
         t0 = time.time()
         agents_num = len(obs)
-        C_rewards = np.zeros(agents_num)
+        #C_rewards = np.zeros(agents_num)
+        # set to init agent pos
+        
         while True:
            
             # actions = [agents[i].act(obs[i]) for i in range(agents_num)]
@@ -93,21 +107,13 @@ if __name__ == '__main__':
             #env.unwrapped.unrealcv.set_attack(env.unwrapped.player_list[1],20)
             actions=[[0,0,0,0],[0,0],[0,0]]
             obs, rewards, done, info = env.step(actions)
-            C_rewards += rewards
+            #C_rewards += rewards
             count_step += 1
             cv2.imshow('drone obs',obs[0])
             cv2.imshow('boat obs',obs[1])
             cv2.imshow('boat_enemy obs',obs[2])
             cv2.waitKey(1)
-            if done:
-                fps = count_step/(time.time() - t0)
-                Total_rewards += C_rewards[0]
-                print ('Fps:' + str(fps), 'R:'+str(C_rewards), 'R_ave:'+str(Total_rewards/eps))
-                break
 
     # Close the env and write monitor result info to disk
     print('Finished')
     env.close()
-
-
-
