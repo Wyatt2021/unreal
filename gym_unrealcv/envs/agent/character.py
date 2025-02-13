@@ -634,6 +634,11 @@ class Character_API(UnrealCv_API):
         cmd = f'vset /camera/{cam_id}/location {x} {y} {z}'
         self.client.request(cmd, -1)
         self.cam[cam_id]['location'] = loc
+    def set_rotation(self, cam_id, rot):  # set camera rotation, rot=[pitch,yaw,roll]
+        [pitch, yaw, roll] = rot
+        cmd = f'vset /camera/{cam_id}/rotation {pitch} {yaw} {roll}'
+        self.client.request(cmd, -1)
+        self.cam[cam_id]['rotation'] = rot
     def get_pose_states(self, obj_pos):
         # get the relative pose of each agent and the absolute location and orientation of the agent
         pose_obs = []

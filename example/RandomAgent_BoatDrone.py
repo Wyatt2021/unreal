@@ -62,7 +62,7 @@ class DronePoseTracker(object):
 
 
 class BoatPoseTracker(object):
-    def __init__(self, expected_distance=10000, expected_angle=0):
+    def __init__(self, expected_distance=10000, expected_angle=2):
         self.velocity_high = 600  # 根据船只的最大速度调整
         self.velocity_low = -600  # 根据船只的最小速度调整
         self.angle_high = 60  # 根据船只的最大转向角度调整
@@ -103,6 +103,14 @@ def init_pose(env):
     # obs, rewards, done, info = env.step(actions)
     # time.sleep(5)
 
+def update_world_camera(env, enemy_location):
+    # update world camera to track the enemy
+    related_pos = [-219, 6030, 7288]
+    camera_rotation = [-50, -120, 0]
+    cur_pos = [enemy_location[0]+related_pos[0],enemy_location[1]+related_pos[1],enemy_location[2]+related_pos[2]]
+    env.unwrapped.unrealcv.set_location(0, cur_pos)
+    env.unwrapped.unrealcv.set_rotation(0, camera_rotation)
+
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description=None)
     parser.add_argument("-e", "--env_id", nargs='?', default='UnrealTrack-Ocean_Map-ContinuousColor-v0',
@@ -116,7 +124,7 @@ if __name__ == '__main__':
 
     args = parser.parse_args()
     env = gym.make(args.env_id)
-    env = configUE.ConfigUEWrapper(env, offscreen=False,resolution=(240,240))
+    env = configUE.ConfigUEWrapper(env, offscreen=False,resolution=(640, 640))
     env.unwrapped.agents_category=['boat', 'boat_enemy', 'drone'] #choose the agent type in the scene
 
     if int(args.time_dilation) > 0:  # -1 means no time_dilation
@@ -156,7 +164,7 @@ if __name__ == '__main__':
         agents_num = len(obs)
         #C_rewards = np.zeros(agents_num)
         # set to init agent pos
-        
+        enemy_destroyed = False        
         while True:
            
             # actions = [agents[i].act(obs[i]) for i in range(agents_num)]
@@ -166,32 +174,65 @@ if __name__ == '__main__':
             # -drone:[x,y,z,yaw]
             # -boat:[angle,speed]
             #example:[[1,0,0,0], [0,500], [0,0]]
-            #
-            enemy_boat_pose = env.unwrapped.unrealcv.get_obj_pose(env.unwrapped.player_list[2])
-            drone_pose = env.unwrapped.unrealcv.get_obj_pose(env.unwrapped.player_list[0])
-            boat_pose = env.unwrapped.unrealcv.get_obj_pose(env.unwrapped.player_list[1])
-            drone_action = drone_tracker.act(drone_pose,enemy_boat_pose)
 
-            distance_drone2enemy = np.linalg.norm(np.array(drone_pose[:2]) - np.array(enemy_boat_pose[:2]))
-            control_flag = False
-            if distance_drone2enemy < 5000 or control_flag:
-                boat_action = boat_tracker.act(boat_pose,enemy_boat_pose)
-                control_flag = True
-            else:
-                boat_action = [0,0]
+            try:
+                enemy_boat_pose = env.unwrapped.unrealcv.get_obj_pose(env.unwrapped.player_list[2])
             
-            actions=[drone_action,boat_action,[0,300]]
-            obs, rewards, done, info = env.step(actions)
-            #C_rewards += rewards
-            count_step += 1
-            cv2.imshow('drone obs',obs[0])
-            if count_step%2 == 0:
-                #save image
-                cv2.imwrite('C:\\Users\\Administrator\\Desktop\\Unrealzoo\\imgs\\drone\\'+str(count_step)+'.png',obs[0])
-                cv2.imwrite('C:\\Users\\Administrator\\Desktop\\Unrealzoo\\imgs\\boat\\'+str(count_step)+'.png',obs[1])
-            cv2.imshow('boat obs',obs[1])
-            cv2.imshow('boat_enemy obs',obs[2])
-            cv2.waitKey(1)
+                drone_pose = env.unwrapped.unrealcv.get_obj_pose(env.unwrapped.player_list[0])
+                boat_pose = env.unwrapped.unrealcv.get_obj_pose(env.unwrapped.player_list[1])
+                drone_action = drone_tracker.act(drone_pose,enemy_boat_pose)
+
+                distance_drone2enemy = np.linalg.norm(np.array(drone_pose[:2]) - np.array(enemy_boat_pose[:2]))
+                control_flag = False
+                if distance_drone2enemy < 5000 or control_flag:
+                    boat_action = boat_tracker.act(boat_pose,enemy_boat_pose)
+                    control_flag = True
+                else:
+                    boat_action = [0,0]
+                
+                actions=[drone_action,boat_action,[0,300]]
+                obs, rewards, done, info = env.step(actions)
+
+                update_world_camera(env, enemy_boat_pose)
+                #C_rewards += rewards
+                count_step += 1
+                cv2.imshow('drone obs',obs[0])
+                third_view_img = env.unwrapped.unrealcv.read_image(0, 'lit')
+                if count_step%1 == 0:
+                    #save image
+                    drone_dir = 'C:\\Users\\Administrator\\Desktop\\Unrealzoo\\imgs\\drone\\'
+                    boat_dir = 'C:\\Users\\Administrator\\Desktop\\Unrealzoo\\imgs\\boat\\'
+                    third_dir = 'C:\\Users\\Administrator\\Desktop\\Unrealzoo\\imgs\\3\\'
+                    os.makedirs(drone_dir,exist_ok=True)
+                    os.makedirs(boat_dir,exist_ok=True)
+                    os.makedirs(third_dir,exist_ok=True)
+
+                    cv2.imwrite('C:\\Users\\Administrator\\Desktop\\Unrealzoo\\imgs\\drone\\'+str(count_step)+'.png',obs[0])
+                    cv2.imwrite('C:\\Users\\Administrator\\Desktop\\Unrealzoo\\imgs\\boat\\'+str(count_step)+'.png',obs[1])
+                    #cv2.imwrite('C:\\Users\\Administrator\\Desktop\\Unrealzoo\\imgs\\3\\'+str(count_step)+'.png',third_view_img)
+
+                cv2.imshow('boat obs',obs[1])
+                cv2.imshow('boat_enemy obs',obs[2])
+                cv2.waitKey(1)
+            except:
+                enemy_destroyed = True
+            
+            if enemy_destroyed:
+                print('enemy boat destroyed')
+                obs = []
+                obs.append(env.unwrapped.unrealcv.read_image(1, 'lit'))
+                obs.append(env.unwrapped.unrealcv.read_image(2, 'lit'))
+                count_step+=1
+                third_view_img = env.unwrapped.unrealcv.read_image(0, 'lit')
+                if count_step%1 == 0:
+                    #save image
+                    cv2.imwrite('C:\\Users\\Administrator\\Desktop\\Unrealzoo\\imgs\\drone\\'+str(count_step)+'.png',obs[0])
+                    cv2.imwrite('C:\\Users\\Administrator\\Desktop\\Unrealzoo\\imgs\\boat\\'+str(count_step)+'.png',obs[1])
+                    #cv2.imwrite('C:\\Users\\Administrator\\Desktop\\Unrealzoo\\imgs\\3\\'+str(count_step)+'.png',third_view_img)
+                cv2.imshow('drone obs',obs[0])
+                cv2.imshow('boat obs',obs[1])
+                #cv2.imshow('third view',third_view_img)
+                cv2.waitKey(1)
 
     # Close the env and write monitor result info to disk
     print('Finished')
